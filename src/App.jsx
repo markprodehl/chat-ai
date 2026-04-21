@@ -270,53 +270,55 @@ function ChatAI() {
       {!loading && !user &&  <SignIn handleSignIn={handleSignIn} handleSignInWithEmail={handleSignInWithEmail} handleSignUpWithEmail={handleSignUpWithEmail} />}
       {user && (
         <>
-          <ConversationList
-            setConversationId={setConversationId}
-            setMessages={setMessages}
-            handleSignOut={handleSignOut}
-            systemMessageText={systemMessageText}
-            setSystemMessageText={setSystemMessageText}
-          />
-          <div className="chat-container" style={{ overflowY: 'scroll' }} ref={messageListRef}>
-            <div className="message-list-container">
-              <div className="message-list">
-                {messages.map((message, i) => {
-                  const messageParts = message.message.split('```');
-                  return (
-                    <div
-                      key={i}
-                      className={`message ${
-                        message.direction === 'incoming' ? 'message-incoming' : 'message-outgoing'
-                      }`}
-                    >
-                      {messageParts.map((messagePart, j) => {
-                        const isCodeSnippet = j % 2 === 1;
-                        if (isCodeSnippet) {
-                          const codeLanguage = messagePart.split('\n')[0];
-                          const codeSnippet = messagePart.replace(codeLanguage + '\n', '');
+          <div className="chat-shell">
+            <ConversationList
+              setConversationId={setConversationId}
+              setMessages={setMessages}
+              handleSignOut={handleSignOut}
+              systemMessageText={systemMessageText}
+              setSystemMessageText={setSystemMessageText}
+            />
+            <div className="chat-container" style={{ overflowY: 'scroll' }} ref={messageListRef}>
+              <div className="message-list-container">
+                <div className="message-list">
+                  {messages.map((message, i) => {
+                    const messageParts = message.message.split('```');
+                    return (
+                      <div
+                        key={i}
+                        className={`message ${
+                          message.direction === 'incoming' ? 'message-incoming' : 'message-outgoing'
+                        }`}
+                      >
+                        {messageParts.map((messagePart, j) => {
+                          const isCodeSnippet = j % 2 === 1;
+                          if (isCodeSnippet) {
+                            const codeLanguage = messagePart.split('\n')[0];
+                            const codeSnippet = messagePart.replace(codeLanguage + '\n', '');
 
-                          return (
-                            <SyntaxHighlighter
-                              className="highlighter"
-                              language={codeLanguage || 'javascript'}
-                              style={twilight}
-                              key={`${i}-${j}`}
-                            >
-                              {codeSnippet}
-                            </SyntaxHighlighter>
-                          );
-                        } else {
-                          return messageContentFormatter(messagePart, message.direction === 'outgoing');
-                        }
-                      })}
+                            return (
+                              <SyntaxHighlighter
+                                className="highlighter"
+                                language={codeLanguage || 'javascript'}
+                                style={twilight}
+                                key={`${i}-${j}`}
+                              >
+                                {codeSnippet}
+                              </SyntaxHighlighter>
+                            );
+                          } else {
+                            return messageContentFormatter(messagePart, message.direction === 'outgoing');
+                          }
+                        })}
+                      </div>
+                    );
+                  })}
+                  {typing && (
+                    <div className="message message-incoming typing-indicator typing-animation">
+                      AI processing: <span>{typingText}</span>
                     </div>
-                  );
-                })}
-                {typing && (
-                  <div className="message message-incoming typing-indicator typing-animation">
-                    AI processing: <span>{typingText}</span>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
           </div>
