@@ -127,7 +127,6 @@ p {
 .message-incoming {
   align-self: flex-start;
   background: rgba(30, 41, 59, 0.92) !important;
-  border: 1px solid rgba(148, 163, 184, 0.14);
   color: #e5eefb;
 }
 
@@ -260,7 +259,6 @@ p {
   justify-content: center;
   border-radius: 14px;
   background: rgba(15, 23, 42, 0.76);
-  border: 1px solid rgba(148, 163, 184, 0.18);
   box-shadow: 0 12px 28px rgba(2, 6, 23, 0.28);
   backdrop-filter: blur(16px);
   z-index: 2;
@@ -295,7 +293,6 @@ summary::marker {
 .list-open {
   width: min(320px, calc(100vw - 48px));
   background: rgba(15, 23, 42, 0.95);
-  border: 1px solid rgba(148, 163, 184, 0.18);
   padding: 14px;
   border-radius: 16px;
   backdrop-filter: blur(20px);
