@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import PropTypes from 'prop-types';
 import { BounceLoader } from "react-spinners";
-import googleIcon from '../../public/google_signin_light.png';
 import '../styles.css';
 import { getAuth, sendPasswordResetEmail } from "firebase/auth";
 import { handleForgotPassword } from './authentication';
@@ -100,7 +99,7 @@ const SignIn = ({ handleSignIn, handleSignInWithEmail, handleSignUpWithEmail }) 
             </div>
           </div>
           <button className="google-btn" onClick={handleGoogleSignIn}>
-            <img className="google-icon" src={googleIcon} alt="Google sign-in" />
+            <img className="google-icon" src="/google_signin_light.png" alt="Google sign-in" />
           </button>
           <div className="forgot-password" onClick={handleForgotPasswordClick}>Forgot Password?</div>
         </>

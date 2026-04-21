@@ -10,7 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@firebase/auth": "^0.23.2",
+    "@firebase/app": "0.14.11",
     "firebase": "^9.6.7",
     "font-awesome": "^4.7.0",
     "prop-types": "^15.8.1",

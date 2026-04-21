@@ -34,27 +34,35 @@ function ChatAI() {
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
-      
-      if (user) {
-        // Fetch the user's document from Firestore
-        const userRef = doc(db, 'users', user.uid);
-        const docSnap = await getDoc(userRef);
-        
-        if (docSnap.exists()) {
-          // Get the data from the user's document
-          const userData = docSnap.data();
-          
-          setUser(user);
-          // Set systemMessageText from the user's document data
-          setSystemMessageText(userData.systemMessageText);
+      try {
+        if (user) {
+          // Fetch the user's document from Firestore
+          const userRef = doc(db, 'users', user.uid);
+          const docSnap = await getDoc(userRef);
+
+          if (docSnap.exists()) {
+            // Get the data from the user's document
+            const userData = docSnap.data();
+
+            setUser(user);
+            // Set systemMessageText from the user's document data
+            setSystemMessageText(userData.systemMessageText);
+          } else {
+            console.log('No user document found!');
+            setUser(null);
+            setSystemMessageText("Explain all concepts like I am 10 years old.");
+          }
         } else {
-          console.log('No user document found!');
+          setUser(null);
+          setSystemMessageText("Explain all concepts like I am 10 years old."); // reset systemMessageText to default
         }
-      } else {
+      } catch (error) {
+        console.error('Error loading auth state:', error);
         setUser(null);
-        setSystemMessageText("Explain all concepts like I am 10 years old."); // reset systemMessageText to default
+        setSystemMessageText("Explain all concepts like I am 10 years old.");
+      } finally {
+        setLoading(false); // Once the initial authentication state is determined, set loading to false
       }
-      setLoading(false); // Once the initial authentication state is determined, set loading to false
     });
 
     // Cleanup subscription
@@ -172,6 +180,10 @@ function ChatAI() {
   }, [user, systemMessageText]);
  
   const handleSend = async (message) => {
+    if (!message.trim()) {
+      return;
+    }
+
     const newMessage = {
       message: message,
       sender: 'user',
@@ -197,6 +209,16 @@ function ChatAI() {
         setTypingText,
         conversationId
       );
+    } else {
+      setTyping(false);
+      setMessages([
+        ...newMessages,
+        {
+          message: 'Conversation is still initializing. Please try sending your message again.',
+          sender: 'ChatGPT',
+          direction: 'incoming',
+        },
+      ]);
     }
   };
 

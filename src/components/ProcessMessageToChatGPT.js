@@ -26,6 +26,15 @@ const processMessageToChatGPT = async (
 
   if(!systemMessageText) {
     console.error('systemMessage undefined')
+    setTyping(false);
+    setMessages([
+      ...chatMessages,
+      {
+        message: 'System message is missing. Please refresh and try again.',
+        sender: 'ChatGPT',
+        direction: 'incoming',
+      },
+    ]);
     return
   }
 
@@ -59,7 +68,8 @@ const processMessageToChatGPT = async (
       // The request failed, let's get more information
       return response.json().then((errorInfo) => {
         console.error('Error info:', errorInfo);
-        throw new Error('Network response was not ok');
+        const errorMessage = errorInfo?.error?.message || `OpenAI request failed with status ${response.status}`;
+        throw new Error(errorMessage);
       });
     }
     return response.json();
@@ -141,7 +151,17 @@ const processMessageToChatGPT = async (
     });
   })
   .catch((error) => {
-    console.error('Network Error:', error)
+    console.error('Network Error:', error);
+    setTypingText('');
+    setTyping(false);
+    setMessages([
+      ...chatMessages,
+      {
+        message: `Unable to get a response: ${error.message}`,
+        sender: 'ChatGPT',
+        direction: 'incoming',
+      },
+    ]);
   })
  };
 
