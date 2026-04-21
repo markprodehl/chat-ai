@@ -105,6 +105,7 @@ p {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  min-height: calc(100% - 24px);
   justify-content: flex-end;
 }
 
@@ -491,7 +492,11 @@ summary::marker {
   }
 
   .message-list-container {
-    padding: 76px 12px 20px;
+    padding: 16px 12px 84px;
+  }
+
+  .message-list {
+    min-height: calc(100% - 0px);
   }
 
   .message {
