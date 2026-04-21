@@ -1,6 +1,6 @@
 import { signInWithPopup, GoogleAuthProvider, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, getAuth } from 'firebase/auth';
 import { auth, db } from '../config/firebaseConfig';
-import { setDoc, doc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { setDoc, doc, getDoc, serverTimestamp } from 'firebase/firestore/lite';
 
 const signIn = async () => {
   const provider = new GoogleAuthProvider();
