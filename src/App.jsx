@@ -11,12 +11,14 @@ import ConversationList from './components/ConversationList';
 import { signIn, signInWithEmail, signUpWithEmail, signOut } from './components/authentication';
 import SignIn from './components/SignIn';
 
-import { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc } from 'firebase/firestore/lite';
 import { db, auth } from './config/firebaseConfig';
 import messageContentFormatter from './components/messageContentFormatter'
 
 function ChatAI() {
   const VITE_MY_OPENAI_API_KEY = import.meta.env.VITE_MY_OPENAI_API_KEY;
+  const VITE_OPENAI_MODEL = import.meta.env.VITE_OPENAI_MODEL || 'gpt-5.4-mini';
+  const VITE_OPENAI_REASONING_EFFORT = import.meta.env.VITE_OPENAI_REASONING_EFFORT || '';
   const [loading, setLoading] = useState(true);
   const [typing, setTyping] = useState(false);
   const [typingText, setTypingText] = useState('');
@@ -203,6 +205,8 @@ function ChatAI() {
       await processMessageToChatGPT(
         newMessages,
         VITE_MY_OPENAI_API_KEY,
+        VITE_OPENAI_MODEL,
+        VITE_OPENAI_REASONING_EFFORT,
         systemMessageText,
         setMessages,
         setTyping,

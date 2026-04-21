@@ -1,6 +1,6 @@
 # ChatAI Application
 
-ChatAI is an application developed using React and Vite. It uses Firebase Firestore for data storage and Google Authentication for user identification. This application is hosted on Google hosting. The application interacts with OpenAI's GPT-3 model for creating conversational agents.
+ChatAI is an application developed using React and Vite. It uses Firebase Firestore for data storage and Google Authentication for user identification. This application is hosted on Google hosting. The application interacts with OpenAI models for creating conversational agents.
 
 Link to the deployed application - https://chat-ai-c95f1.web.app/
 
@@ -52,6 +52,8 @@ Link to the deployed application - https://chat-ai-c95f1.web.app/
 
     ```
     VITE_MY_OPENAI_API_KEY=<your_openai_key_here>
+    VITE_OPENAI_MODEL=gpt-5.4-mini
+    VITE_OPENAI_REASONING_EFFORT=low
     VITE_FIREBASE_API_KEY=<your_firebase_api_key_here>
     VITE_AUTH_DOMAIN=<your_auth_domain_here>
     VITE_PROJECT_ID=<your_project_id_here>
@@ -70,7 +72,7 @@ Link to the deployed application - https://chat-ai-c95f1.web.app/
 
 ## Usage
 
-After signing in with Google, users can start a conversation with the AI. Each user's message is sent to OpenAI's GPT-3 model, which returns a response that is displayed on the user's screen.
+After signing in with Google, users can start a conversation with the AI. Each user's message is sent to an OpenAI model, which returns a response that is displayed on the user's screen.
 
 The AI can simulate a 'typing' effect before it displays its message, providing a more conversational feel to the application.
 

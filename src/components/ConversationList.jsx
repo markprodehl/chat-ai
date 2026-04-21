@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { collection, getDocs, query, orderBy, doc, writeBatch } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, doc, writeBatch } from 'firebase/firestore/lite';
 import { db, auth } from '/src/config/firebaseConfig.js';
 import PropTypes from 'prop-types';
 import { IoIosMenu } from 'react-icons/io';
