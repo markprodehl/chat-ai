@@ -1,9 +1,11 @@
-import { updateDoc, arrayUnion, doc, serverTimestamp } from 'firebase/firestore';
+import { updateDoc, arrayUnion, doc, serverTimestamp } from 'firebase/firestore/lite';
 import { db, auth } from '/src/config/firebaseConfig.js';
 
 const processMessageToChatGPT = async (
   chatMessages,
   VITE_MY_OPENAI_API_KEY,
+  VITE_OPENAI_MODEL,
+  VITE_OPENAI_REASONING_EFFORT,
   systemMessageText,
   setMessages,
   setTyping,
@@ -38,23 +40,22 @@ const processMessageToChatGPT = async (
     return
   }
 
-  // role: "user" -> message from the user
-  // role "assistant" -> message from ChatGPT
-  // role "system" -> A message defining how we want ChatGPT to respond to the user input
-  const systemMessage = {
-    role: 'system',
-    content: systemMessageText,
+  // Responses API is the supported path for GPT-5 family models.
+  const apiRequestBody = {
+    model: VITE_OPENAI_MODEL,
+    instructions: systemMessageText,
+    input: apiMessages,
+    store: false,
   };
 
-  const apiRequestBody = {
-    model: 'gpt-4',
-    messages: [
-      systemMessage, // Putting this at the front of the messages is require within the messages array to get processed
-      ...apiMessages, // [message1, message2, message3]
-    ],
-  };
+  if (VITE_OPENAI_MODEL.startsWith('gpt-5') || VITE_OPENAI_MODEL.startsWith('o')) {
+    const defaultEffort = VITE_OPENAI_MODEL.includes('-pro') ? 'medium' : 'low';
+    apiRequestBody.reasoning = {
+      effort: VITE_OPENAI_REASONING_EFFORT || defaultEffort,
+    };
+  }
   
-  await fetch('https://api.openai.com/v1/chat/completions', {
+  await fetch('https://api.openai.com/v1/responses', {
     method: 'post',
     headers: {
       Authorization: 'Bearer ' + VITE_MY_OPENAI_API_KEY,
@@ -94,11 +95,18 @@ const processMessageToChatGPT = async (
   // To add the TYPING EFFECT use this
 
   .then(async (data) => {
-    // Log to show the structure of the response in the console
-    console.log(data.choices[0].message.content); // Displays the response in the browser console
+    const responseText = data.output
+      ?.flatMap((item) => item.content || [])
+      ?.filter((item) => item.type === 'output_text')
+      ?.map((item) => item.text)
+      ?.join('') || '';
+
+    if (!responseText) {
+      throw new Error('OpenAI returned an empty response.');
+    }
+
     // Show the typing text one character at a time
     let typingTimeout = 0.5; // You can adjust the typing speed by changing this value
-    const responseText = data.choices[0].message.content; 
     
     await responseText.split('').reduce((acc, char) => {
       // Use the reduce function to iterate through each character in the response text
