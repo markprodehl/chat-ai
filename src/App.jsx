@@ -32,6 +32,7 @@ function ChatAI() {
   ]); // []
   const [conversationId, setConversationId] = useState(null);
   const messageListRef = useRef(null);
+  const shouldAutoScrollRef = useRef(true);
   const [user, setUser] = useState(null);
 
   useEffect(() => {
@@ -227,10 +228,20 @@ function ChatAI() {
   };
 
   useEffect(() => {
-    if (messageListRef.current) {
+    if (messageListRef.current && shouldAutoScrollRef.current) {
       messageListRef.current.scrollTop = messageListRef.current.scrollHeight;
     }
   }, [messages, typingText, typing]);
+
+  const handleChatScroll = () => {
+    if (!messageListRef.current) {
+      return;
+    }
+
+    const { scrollTop, scrollHeight, clientHeight } = messageListRef.current;
+    const distanceFromBottom = scrollHeight - (scrollTop + clientHeight);
+    shouldAutoScrollRef.current = distanceFromBottom < 64;
+  };
 
   const handleButtonClick = () => {
     const inputElement = document.querySelector('.message-input');
@@ -278,8 +289,8 @@ function ChatAI() {
               systemMessageText={systemMessageText}
               setSystemMessageText={setSystemMessageText}
             />
-            <div className="chat-container" style={{ overflowY: 'scroll' }} ref={messageListRef}>
-              <div className="message-list-container">
+            <div className="chat-container">
+              <div className="message-list-container" ref={messageListRef} onScroll={handleChatScroll}>
                 <div className="message-list">
                   {messages.map((message, i) => {
                     const messageParts = message.message.split('```');
