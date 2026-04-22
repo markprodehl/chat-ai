@@ -1,6 +1,96 @@
 import { updateDoc, arrayUnion, doc, serverTimestamp } from 'firebase/firestore/lite';
 import { db, auth } from '/src/config/firebaseConfig.js';
 
+const parseResponseText = (data) =>
+  data.output
+    ?.flatMap((item) => item.content || [])
+    ?.filter((item) => item.type === 'output_text')
+    ?.map((item) => item.text)
+    ?.join('') || '';
+
+const saveConversationResponse = async (chatMessages, conversationId, responseText) => {
+  const currentUser = auth.currentUser;
+  if (!currentUser) {
+    console.error('Error: User not authenticated.');
+    return;
+  }
+
+  const userId = currentUser.uid;
+  const userRef = doc(db, 'users', userId);
+  const conversationRef = doc(userRef, 'conversations', conversationId);
+  const userMessage = chatMessages[chatMessages.length - 1]?.message || '';
+
+  await updateDoc(conversationRef, {
+    userId: userId,
+    messages: arrayUnion({
+      userMessage: userMessage,
+      aiResponse: responseText,
+    }),
+    lastUpdated: serverTimestamp(),
+  });
+
+  document.dispatchEvent(new CustomEvent('update-conversation'));
+};
+
+const readStreamedResponse = async (response, setTypingText) => {
+  if (!response.body) {
+    throw new Error('OpenAI response body is not readable.');
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let streamedText = '';
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) {
+      break;
+    }
+
+    buffer += decoder.decode(value, { stream: true });
+    const events = buffer.split('\n\n');
+    buffer = events.pop() || '';
+
+    for (const eventChunk of events) {
+      const lines = eventChunk
+        .split('\n')
+        .map((line) => line.trim())
+        .filter(Boolean);
+
+      for (const line of lines) {
+        if (!line.startsWith('data:')) {
+          continue;
+        }
+
+        const rawData = line.slice(5).trim();
+        if (!rawData || rawData === '[DONE]') {
+          continue;
+        }
+
+        const eventData = JSON.parse(rawData);
+
+        if (eventData.type === 'response.output_text.delta') {
+          streamedText += eventData.delta || '';
+          setTypingText(streamedText);
+          continue;
+        }
+
+        if (eventData.type === 'response.completed' && !streamedText) {
+          streamedText = parseResponseText(eventData.response || {});
+          setTypingText(streamedText);
+        }
+
+        if (eventData.type === 'error') {
+          throw new Error(eventData.error?.message || 'OpenAI streaming request failed.');
+        }
+      }
+    }
+  }
+
+  return streamedText.trim();
+};
+
 const processMessageToChatGPT = async (
   chatMessages,
   VITE_MY_OPENAI_API_KEY,
@@ -46,6 +136,7 @@ const processMessageToChatGPT = async (
     instructions: systemMessageText,
     input: apiMessages,
     store: false,
+    stream: true,
   };
 
   if (VITE_OPENAI_MODEL.startsWith('gpt-5') || VITE_OPENAI_MODEL.startsWith('o')) {
@@ -55,110 +146,42 @@ const processMessageToChatGPT = async (
     };
   }
   
-  await fetch('https://api.openai.com/v1/responses', {
-    method: 'post',
-    headers: {
-      Authorization: 'Bearer ' + VITE_MY_OPENAI_API_KEY,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(apiRequestBody),
-  })
-  // Now we need to grab the data being returned from OpenAI
-  .then((response) => {
+  try {
+    const response = await fetch('https://api.openai.com/v1/responses', {
+      method: 'post',
+      headers: {
+        Authorization: 'Bearer ' + VITE_MY_OPENAI_API_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(apiRequestBody),
+    });
+
     if (!response.ok) {
-      // The request failed, let's get more information
-      return response.json().then((errorInfo) => {
-        console.error('Error info:', errorInfo);
-        const errorMessage = errorInfo?.error?.message || `OpenAI request failed with status ${response.status}`;
-        throw new Error(errorMessage);
-      });
+      const errorInfo = await response.json().catch(() => null);
+      console.error('Error info:', errorInfo);
+      const errorMessage = errorInfo?.error?.message || `OpenAI request failed with status ${response.status}`;
+      throw new Error(errorMessage);
     }
-    return response.json();
-  })
 
-  // USe this if you dont want the typing effect
-  // .then((data) => {
-  //   // Log to show the structure of the response in the console
-  // console.log(data.choices[0].message.content)
-  //  // Now we need to show this message to our user in the UI using the setMessages function
-  //   setMessages([
-  //     ...chatMessages,
-  //     {
-  //       message: data.choices[0].message.content,
-  //       sender: 'ChatGPT',
-  //     },
-  //   ]);
-  //    // Once we get the response we need to setTyping to false again
-  //   setTyping(false);
-  // });
-
-  // To add the TYPING EFFECT use this
-
-  .then(async (data) => {
-    const responseText = data.output
-      ?.flatMap((item) => item.content || [])
-      ?.filter((item) => item.type === 'output_text')
-      ?.map((item) => item.text)
-      ?.join('') || '';
+    const responseText = await readStreamedResponse(response, setTypingText);
 
     if (!responseText) {
       throw new Error('OpenAI returned an empty response.');
     }
 
-    // Show the typing text one character at a time
-    let typingTimeout = 0.5; // You can adjust the typing speed by changing this value
-    
-    await responseText.split('').reduce((acc, char) => {
-      // Use the reduce function to iterate through each character in the response text
-      return acc.then(() => {
-        return new Promise((resolve) => {
-          setTimeout(() => {
-            setTypingText((prevTypingText) => prevTypingText + char);
-            resolve();
-          }, typingTimeout); // Set the typing delay based on the typingTimeout
-        });
-      });
-    }, Promise.resolve());
-
     setTypingText('');
     setTyping(false);
+    setMessages([
+      ...chatMessages,
+      {
+        message: responseText,
+        sender: 'ChatGPT',
+        direction: 'incoming',
+      },
+    ]);
 
-    setTimeout(async () => {
-      setMessages([
-        ...chatMessages,
-        {
-          message: responseText,
-          sender: 'ChatGPT',
-          direction: 'incoming',
-        },
-      ]);
-
-      // Save the conversation history to Firestore
-      const currentUser = auth.currentUser; // Initialize currentUser at the beginning
-      if (currentUser) {
-        const userId = currentUser.uid;
-        const userRef = doc(db, 'users', userId); // Get the document reference to the current user
-        const conversationRef = doc(userRef, 'conversations', conversationId); // Get the reference to the conversation document under the current user
-        const userMessage = chatMessages[chatMessages.length - 1]?.message || '';
-        const aiResponse = responseText || '';
-
-        await updateDoc(conversationRef, {
-          userId: userId,
-          messages: arrayUnion({
-            userMessage: userMessage,
-            aiResponse: aiResponse,
-          }),
-          lastUpdated: serverTimestamp(),
-        });
-
-        // Emit a custom event right after the conversation document is updated to update the history
-        document.dispatchEvent(new CustomEvent('update-conversation'));
-      } else {
-        console.error('Error: User not authenticated.');
-      }
-    });
-  })
-  .catch((error) => {
+    await saveConversationResponse(chatMessages, conversationId, responseText);
+  } catch (error) {
     console.error('Network Error:', error);
     setTypingText('');
     setTyping(false);
@@ -170,7 +193,7 @@ const processMessageToChatGPT = async (
         direction: 'incoming',
       },
     ]);
-  })
+  }
  };
 
 export default processMessageToChatGPT;
