@@ -7,8 +7,7 @@ Link to the deployed application - https://chat-ai-c95f1.web.app/
 ## Features
 
 - Google Authentication
-- Chat interface with real-time messages
-- Typing effect for the AI assistant
+- Chat interface with streamed AI responses
 - Hard coded message content formatter
 - SyntaxHighlighter that formats code into readable snippets
 - System message that defines AI assistant's behavior
@@ -64,7 +63,36 @@ Link to the deployed application - https://chat-ai-c95f1.web.app/
 
     ```
 
-5. Run the application:
+5. If you deploy through GitHub Actions / Firebase Hosting, add the same values as **GitHub repository secrets** because Vite reads them at build time.
+
+   Go to:
+
+    ```
+    GitHub repo -> Settings -> Secrets and variables -> Actions
+    ```
+
+   Add these repository secrets:
+
+    ```
+    VITE_MY_OPENAI_API_KEY
+    VITE_OPENAI_MODEL
+    VITE_OPENAI_REASONING_EFFORT
+    VITE_FIREBASE_API_KEY
+    VITE_AUTH_DOMAIN
+    VITE_PROJECT_ID
+    VITE_STORAGE_BUCKET
+    VITE_MESSAGE_SENDER_ID
+    VITE_APP_ID
+    VITE_MEASUREMENT_ID
+    ```
+
+   Important:
+
+   - Use the secret name exactly as shown above.
+   - Paste only the value into each GitHub secret, not `NAME=value`.
+   - If these values are missing in GitHub, deployed builds can fail or initialize Firebase/OpenAI with invalid config.
+
+6. Run the application:
 
     ```
     npm run dev
@@ -72,9 +100,9 @@ Link to the deployed application - https://chat-ai-c95f1.web.app/
 
 ## Usage
 
-After signing in with Google, users can start a conversation with the AI. Each user's message is sent to an OpenAI model, which returns a response that is displayed on the user's screen.
+After signing in with Google, users can start a conversation with the AI. Each user's message is sent to an OpenAI model, which returns a response that is streamed into the chat UI.
 
-The AI can simulate a 'typing' effect before it displays its message, providing a more conversational feel to the application.
+The app uses OpenAI's Responses API with configurable model and reasoning settings through the environment variables above.
 
 Users can also adjust the AI's 'personality' using a system message that sets the tone for the AI's responses.
 
@@ -85,7 +113,7 @@ The application consists of several main components:
 - `ChatAI`: The main chat interface.
 - `SignIn`: Handles user authentication.
 - `ConversationList`: Displays a list of all conversations.
-- `ProcessMessageToChatGPT`: Processes messages and sends them to GPT-3 for response generation.
+- `ProcessMessageToChatGPT`: Processes messages and sends them to OpenAI for streamed response generation.
 - `PersonalityOptions`: Contains options for setting the AI's 'personality'.
 - `authentication.js`: Handles sign in and sign out operations.
 - `firebaseConfig.js`: Contains configuration details for Firestore and Firebase Authentication.
