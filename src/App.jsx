@@ -230,7 +230,7 @@ function ChatAI() {
     if (messageListRef.current) {
       messageListRef.current.scrollTop = messageListRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, typingText, typing]);
 
   const handleButtonClick = () => {
     const inputElement = document.querySelector('.message-input');
