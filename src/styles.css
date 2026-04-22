@@ -43,7 +43,7 @@ body {
   min-height: 0;
   height: calc(100vh - 154px);
   max-height: 880px;
-  overflow-y: auto;
+  overflow: hidden;
   background: transparent;
   border-radius: 18px;
 }
@@ -102,8 +102,11 @@ p {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  min-height: calc(100% - 24px);
-  justify-content: flex-end;
+  min-height: 100%;
+}
+
+.message-list > :first-child {
+  margin-top: auto;
 }
 
 .message {
@@ -486,7 +489,7 @@ summary::marker {
   }
 
   .message-list {
-    min-height: calc(100% - 0px);
+    min-height: 100%;
   }
 
   .message {
