@@ -15,6 +15,8 @@ import { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc } from 'fir
 import { db, auth } from './config/firebaseConfig';
 import messageContentFormatter from './components/messageContentFormatter'
 
+const DEFAULT_SYSTEM_MESSAGE = 'Explain all concepts like I am 10 years old.';
+
 function ChatAI() {
   const VITE_MY_OPENAI_API_KEY = import.meta.env.VITE_MY_OPENAI_API_KEY;
   const VITE_OPENAI_MODEL = import.meta.env.VITE_OPENAI_MODEL || 'gpt-5.4-mini';
@@ -22,7 +24,8 @@ function ChatAI() {
   const [loading, setLoading] = useState(true);
   const [typing, setTyping] = useState(false);
   const [typingText, setTypingText] = useState('');
-  const [systemMessageText, setSystemMessageText] = useState('');
+  const [systemMessageText, setSystemMessageText] = useState(DEFAULT_SYSTEM_MESSAGE);
+  const [profileReady, setProfileReady] = useState(false);
   const [messages, setMessages] = useState([
     {
       message: 'Hello, I am your AI assistant. Feel free to ask me anything.',
@@ -36,39 +39,42 @@ function ChatAI() {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async (user) => {
-      try {
-        if (user) {
-          // Fetch the user's document from Firestore
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setLoading(false);
+
+      if (!user) {
+        setUser(null);
+        setProfileReady(true);
+        setSystemMessageText(DEFAULT_SYSTEM_MESSAGE);
+        return;
+      }
+
+      setUser(user);
+      setProfileReady(false);
+
+      const loadUserProfile = async () => {
+        try {
           const userRef = doc(db, 'users', user.uid);
           const docSnap = await getDoc(userRef);
 
           if (docSnap.exists()) {
-            // Get the data from the user's document
             const userData = docSnap.data();
-
-            setUser(user);
-            // Set systemMessageText from the user's document data
-            setSystemMessageText(userData.systemMessageText);
+            setSystemMessageText(userData.systemMessageText || DEFAULT_SYSTEM_MESSAGE);
           } else {
             console.log('No user document found!');
-            setUser(null);
-            setSystemMessageText("Explain all concepts like I am 10 years old.");
+            setSystemMessageText(DEFAULT_SYSTEM_MESSAGE);
           }
-        } else {
-          setUser(null);
-          setSystemMessageText("Explain all concepts like I am 10 years old."); // reset systemMessageText to default
+        } catch (error) {
+          console.error('Error loading auth state:', error);
+          setSystemMessageText(DEFAULT_SYSTEM_MESSAGE);
+        } finally {
+          setProfileReady(true);
         }
-      } catch (error) {
-        console.error('Error loading auth state:', error);
-        setUser(null);
-        setSystemMessageText("Explain all concepts like I am 10 years old.");
-      } finally {
-        setLoading(false); // Once the initial authentication state is determined, set loading to false
-      }
+      };
+
+      loadUserProfile();
     });
 
-    // Cleanup subscription
     return () => {
       unsubscribe();
     };
@@ -77,7 +83,7 @@ function ChatAI() {
   // Save systemMessageText to Firestore when it changes
   useEffect(() => {
     const saveSystemMessageText = async () => {
-      if (user && systemMessageText !== user.systemMessageText) {
+    if (user && profileReady) {
         try {
           const userRef = doc(db, 'users', user.uid);
           await updateDoc(userRef, {
@@ -90,7 +96,7 @@ function ChatAI() {
     };
 
     saveSystemMessageText();
-  }, [systemMessageText, user]);
+  }, [systemMessageText, user, profileReady]);
 
   const handleSignIn = async () => {
     const user = await signIn();
@@ -177,10 +183,10 @@ function ChatAI() {
       }
     };
   
-    if (user && systemMessageText) {
+    if (user && profileReady && systemMessageText) {
       createNewConversation();
     }
-  }, [user, systemMessageText]);
+  }, [user, systemMessageText, profileReady]);
  
   const handleSend = async (message) => {
     if (!message.trim()) {
