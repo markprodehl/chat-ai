@@ -38,6 +38,51 @@ body {
   position: relative;
 }
 
+.startup-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 24px;
+  background:
+    radial-gradient(circle at top, rgba(37, 99, 235, 0.16), transparent 38%),
+    rgba(11, 17, 32, 0.82);
+  backdrop-filter: blur(12px);
+}
+
+.startup-spinner {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 3px solid rgba(148, 163, 184, 0.24);
+  border-top-color: #38bdf8;
+  border-right-color: #2563eb;
+  animation: startup-spin 0.9s linear infinite;
+  box-shadow: 0 0 24px rgba(56, 189, 248, 0.18);
+}
+
+.startup-loading-copy {
+  max-width: 340px;
+  text-align: center;
+}
+
+.startup-loading-title {
+  margin: 0 0 6px;
+  font-size: clamp(1.15rem, 2.8vw, 1.5rem);
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.startup-loading-text {
+  margin: 0;
+  color: #cbd5e1;
+  font-size: 0.98rem;
+}
+
 .chat-container {
   width: min(100%, 860px);
   min-height: 0;
@@ -239,6 +284,12 @@ p {
 
 .typing-animation {
   animation: typing 1s linear infinite;
+}
+
+@keyframes startup-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .hide-title {

@@ -284,6 +284,15 @@ function ChatAI() {
 
   return (
     <div className="chat-ai">
+      {(loading || (user && !profileReady)) && (
+        <div className="startup-loading" role="status" aria-live="polite">
+          <div className="startup-spinner" aria-hidden="true"></div>
+          <div className="startup-loading-copy">
+            <h1 className="startup-loading-title">Loading ChatAI</h1>
+            <p className="startup-loading-text">Restoring your session and preparing the workspace.</p>
+          </div>
+        </div>
+      )}
       {!loading && !user &&  <SignIn handleSignIn={handleSignIn} handleSignInWithEmail={handleSignInWithEmail} handleSignUpWithEmail={handleSignUpWithEmail} />}
       {user && (
         <>
